@@ -1,4 +1,4 @@
-**DiTXTools is a manifest downloader project that aims to manage game libraries effectively.**
+**DiTXToolsV2 is a manifest downloader project that aims to manage game libraries effectively.**
 
 <div style="text-align: center;">
   <img src="https://ditxtools.vercel.app/img/pakgabenDX.png" style="width: 50%; max-width: 400px; height: auto;" alt="Deskripsi Gambar">
