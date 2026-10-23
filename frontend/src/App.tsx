@@ -1,22 +1,42 @@
-import { useState } from 'react'
-import './App.css'
+import { useSyncExternalStore } from "react";
+import "./index.css";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import HomePage from "./pages/HomePage";
+import ManifestPage from "./pages/ManifestPage";
+import FixesPage from "./pages/FixesPage";
+import { getPageFromPath, navigate } from "./router";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const currentPage = useSyncExternalStore(
+    (onStoreChange) => {
+      window.addEventListener("popstate", onStoreChange);
+      window.addEventListener("router-navigate", onStoreChange);
+      return () => {
+        window.removeEventListener("popstate", onStoreChange);
+        window.removeEventListener("router-navigate", onStoreChange);
+      };
+    },
+    () => getPageFromPath(window.location.pathname),
+  );
 
-  return (
-    <div style={{ textAlign: 'center', marginTop: '50px' }}>
-      <h1>Halo, Selamat Datang di Vite + React!</h1>
-      <p>Contoh project sederhana dengan counter.</p>
-      
-      <button 
-        onClick={() => setCount(count + 1)}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-      >
-        Jumlah klik: {count}
-      </button>
-    </div>
-  )
+return (
+    <>
+      {currentPage === 'admin' ? (
+        <Admin />
+      ) : currentPage === 'api' ? (
+        <Api />
+      ) : (
+        <>
+          <Navbar currentPage={currentPage} onNavigate={navigate} />
+          <main>
+            {currentPage === 'home' && <HomePage onNavigate={navigate} />}
+            {currentPage === 'manifest' && <ManifestPage />}
+            {currentPage === 'fixes' && <FixesPage />}
+          </main>
+          <Footer />
+        </>
+      )}
+    </>
+  );
 }
-
-export default App
