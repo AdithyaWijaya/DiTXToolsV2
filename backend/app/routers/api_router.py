@@ -1,11 +1,11 @@
 import httpx
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.services.steam_service import search_game, get_steam_game_data, get_hubcap_game_status
-from app.services.hubcap_service import download_hubcap_manifest
-from app.config import HUBCAP_APIKEY, HUBCAP_MANIFEST_API
+from app.services.manifest_service import download_manifest
 
 router = APIRouter(prefix="/api",tags=["API"])
 
@@ -78,15 +78,16 @@ async def get_steam_details(app_id: str):
     })
 
 #GET
-#/api/manifest/{app_id}
-#Download a game manifest ZIP file. Counts toward your daily usage.
+#/api/manifest/{app_id}?provider=hubcap|ManifestHub2
+#Download a game manifest ZIP file. Counts toward your daily usage (hubcap only).
 @router.get("/manifest/{app_id}")
-async def download_manifest(
+async def download_manifest_endpoint(
     app_id: int,
+    provider: Literal["hubcap", "ManifestHub2"] = Query("hubcap"),
     db: Session = Depends(get_db),
 ):
     try:
-        response = await download_hubcap_manifest(db, app_id)
+        response = await download_manifest(db, app_id, provider)
     except ValueError:
         raise HTTPException(
             401,
@@ -95,16 +96,16 @@ async def download_manifest(
     except httpx.RequestError:
         raise HTTPException(
             502,
-            "Failed to reach Hubcap manifest API."
+            f"Failed to reach {provider} manifest provider."
         )
 
     if response.status_code == 404:
         raise HTTPException(
             404,
-            "Manifest not found."
+            f"Manifest not found on {provider}."
         )
 
-    if response.status_code == 401 or response.status_code == 403:
+    if provider == "hubcap" and response.status_code in (401, 403):
         raise HTTPException(
             response.status_code,
             "Invalid Hubcap API key."
@@ -113,7 +114,7 @@ async def download_manifest(
     if response.status_code != 200:
         raise HTTPException(
             response.status_code,
-            "Failed to download manifest."
+            f"Failed to download manifest from {provider}."
         )
 
     return Response(

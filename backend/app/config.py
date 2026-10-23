@@ -16,3 +16,4 @@ STEAM_API = "https://store.steampowered.com/api/appdetails"
 HUBCAP_API = "https://hubcapmanifest.com/api/v1"
 HUBCAP_APIKEY: str = os.getenv("HUBCAP_APIKEY")
 HUBCAP_MANIFEST_API = "https://hubcapmanifest.com/api/v1/manifest/{app_id}"
+MANIFESTHUB2_MANIFEST_API = "https://codeload.github.com/SSMGAlt/ManifestHub2/zip/refs/heads/{app_id}"
