@@ -124,7 +124,6 @@ export default function ManifestPage() {
   const [detail, setDetail] = useState<DetailState | null>(() => manifestCache.detail ?? null);
   const [dlStatus, setDlStatus] = useState(() => manifestCache.dlStatus ?? '');
   const [dlLoading, setDlLoading] = useState(() => manifestCache.dlLoading ?? false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stateRef = useRef(manifestCache);
 
@@ -173,22 +172,31 @@ export default function ManifestPage() {
     const raw = e.target.value;
     const val = searchMode === 'appid' ? raw.replace(/[^0-9]/g, '') : raw;
     setQuery(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setDropdownOpen(false);
+  };
 
-    if (searchMode === 'title' && val.trim().length > 0 && /^\d+$/.test(val.trim())) {
+  const runSearch = () => {
+    const q = query.trim();
+
+    if (searchMode === 'title' && /^\d+$/.test(q)) {
       setDropdownOpen(true);
       setDropdownItems([]);
       setDropdownMsg('Title search only accepts game titles. Switch to "App ID" to search by ID.');
       return;
     }
 
-    if (val.length < 3) { setDropdownOpen(false); return; }
-    debounceRef.current = setTimeout(() => doSearch(val, searchMode), 350);
+    if (q.length < 3) {
+      setDropdownOpen(true);
+      setDropdownItems([]);
+      setDropdownMsg('Type at least 3 characters to search.');
+      return;
+    }
+
+    doSearch(q, searchMode);
   };
 
   const switchSearchMode = (mode: SearchMode) => {
     if (mode === searchMode) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
     setSearchMode(mode);
     setQuery('');
     setDropdownOpen(false);
@@ -430,9 +438,15 @@ export default function ManifestPage() {
                 inputMode={searchMode === 'appid' ? 'numeric' : 'text'}
                 value={query}
                 onChange={handleInput}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    runSearch();
+                  }
+                }}
                 onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
                 onFocus={() => query.length >= 3 && dropdownItems.length > 0 && setDropdownOpen(true)}
-                placeholder={searchMode === 'appid' ? 'Search by App ID (e.g. 730)…' : 'Search by game title…'}
+                placeholder={searchMode === 'appid' ? 'Search by App ID (e.g. 400), press Enter…' : 'Search by game title, press Enter…'}
                 autoComplete="off"
                 style={{
                   width: '100%',
