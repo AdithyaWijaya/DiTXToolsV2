@@ -388,9 +388,9 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
         <div className="stats-row">
           {[
-            { val: "119k+", label: "Total Games" },
-            { val: "11,881", label: "Complete Editions" },
-            { val: "28.7 GB", label: "DB Total Size" },
+            { val: "127K+", label: "Total Games" },
+            { val: "12,945", label: "Complete Editions" },
+            { val: "31.9 GB", label: "DB Total Size" },
           ].map((s) => (
             <div
               key={s.label}
