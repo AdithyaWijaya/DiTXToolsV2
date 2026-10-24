@@ -80,6 +80,23 @@ function escHtml(str: string): string {
   return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
 }
 
+function sanitizeFileNamePart(name: string): string {
+  return name
+    .normalize('NFC')
+    .replace(/\p{Cc}/gu, ' ')
+    .replace(/[<>:"/\\|?*]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/g, '')
+    .slice(0, 150)
+    .trim();
+}
+
+function buildManifestFilename(appId: string, gameName: string): string {
+  const safeName = sanitizeFileNamePart(gameName);
+  return safeName ? `${appId}_${safeName}.zip` : `${appId}.zip`;
+}
+
 function unavailableManifestMessage(currentSource: ManifestSource): string {
   switch (currentSource) {
     case 'ManifestHub2':
@@ -293,8 +310,7 @@ export default function ManifestPage() {
       }
 
       const blob = await res.blob();
-      const disposition = res.headers.get('Content-Disposition') ?? '';
-      const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? `${detail.appId}.zip`;
+      const filename = buildManifestFilename(detail.appId, detail.name);
 
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
@@ -369,7 +385,7 @@ export default function ManifestPage() {
               {
                 value: 'ManifestHub2' as const,
                 title: 'DaRwiN',
-                subtitle: 'Free (Manifest Only)',
+                subtitle: 'Alternative',
               },
               {
                 value: 'hubcap' as const,
