@@ -23,10 +23,8 @@ export function formatUtcTimestamp(timestamp: string): string {
   return `${datePart} ${timePart}`;
 }
 
-type ManifestSource = 'hubcap' | 'manifesthub1' | 'sushi' | 'ryuu' | 'yaszz';
+type ManifestSource = 'hubcap' | 'ManifestHub2';
 type SearchMode = 'title' | 'appid';
-
-const HIDDEN_SOURCE_OPTIONS = new Set<ManifestSource>(['manifesthub1', 'ryuu', 'sushi']);
 
 interface Game {
   game_name?: string;
@@ -84,17 +82,11 @@ function escHtml(str: string): string {
 
 function unavailableManifestMessage(currentSource: ManifestSource): string {
   switch (currentSource) {
-    case 'sushi':
-      return 'Manifest not available from EkOp. Try another source; Ex: Hubcap.';
-    case 'ryuu':
-      return 'Manifest not available from TanJungHoo. Try another source; Ex: Hubcap.';
-    case 'yaszz':
-      return 'Manifest not available from WoWo. Try another source; Ex: Hubcap.';
-    case 'manifesthub1':
-      return 'Invalid API key or manifest not available from DaRwiN. Try another source; Ex: Hubcap.';
+    case 'ManifestHub2':
+      return 'Manifest not available from DaRwiN. Try another source; Ex: Jeffrey.';
     case 'hubcap':
     default:
-      return 'Manifest not available.';
+      return 'Manifest not available from Jeffrey. Try another source; Ex: DaRwiN.';
   }
 }
 
@@ -113,10 +105,6 @@ const manifestCache: Partial<{
   query: string;
   searchMode: SearchMode;
   source: ManifestSource;
-  licenseToken: string;
-  manifestHubApiKey: string;
-  tokenDraft: string;
-  manifestHubDraft: string;
   dropdownOpen: boolean;
   dropdownItems: { name: string; id: string }[];
   dropdownMsg: string;
@@ -128,17 +116,7 @@ const manifestCache: Partial<{
 export default function ManifestPage() {
   const [query, setQuery] = useState(() => manifestCache.query ?? '');
   const [searchMode, setSearchMode] = useState<SearchMode>(() => manifestCache.searchMode ?? 'title');
-  const [source, setSource] = useState<ManifestSource>(() => manifestCache.source ?? 'yaszz');
-  const [licenseToken, setLicenseToken] = useState(() => manifestCache.licenseToken ?? '');
-  const [manifestHubApiKey, setManifestHubApiKey] = useState(() => manifestCache.manifestHubApiKey ?? '');
-  const [tokenModalOpen, setTokenModalOpen] = useState(false);
-  const [tokenDraft, setTokenDraft] = useState(() => manifestCache.tokenDraft ?? '');
-  const [tokenError, setTokenError] = useState('');
-  const [tokenChecking, setTokenChecking] = useState(false);
-  const [manifestHubModalOpen, setManifestHubModalOpen] = useState(false);
-  const [manifestHubDraft, setManifestHubDraft] = useState(() => manifestCache.manifestHubDraft ?? '');
-  const [manifestHubError, setManifestHubError] = useState('');
-  const [manifestHubChecking, setManifestHubChecking] = useState(false);
+  const [source, setSource] = useState<ManifestSource>(() => manifestCache.source ?? 'ManifestHub2');
   const [dropdownOpen, setDropdownOpen] = useState(() => manifestCache.dropdownOpen ?? false);
   const [dropdownItems, setDropdownItems] = useState<{ name: string; id: string }[]>(() => manifestCache.dropdownItems ?? []);
   const [dropdownMsg, setDropdownMsg] = useState(() => manifestCache.dropdownMsg ?? '');
@@ -151,7 +129,7 @@ export default function ManifestPage() {
   const stateRef = useRef(manifestCache);
 
   useEffect(() => {
-    stateRef.current = { query, searchMode, source, licenseToken, manifestHubApiKey, tokenDraft, manifestHubDraft, dropdownOpen, dropdownItems, dropdownMsg, detail, dlStatus, dlLoading };
+    stateRef.current = { query, searchMode, source, dropdownOpen, dropdownItems, dropdownMsg, detail, dlStatus, dlLoading };
   });
 
   useEffect(() => {
@@ -159,82 +137,6 @@ export default function ManifestPage() {
       Object.assign(manifestCache, stateRef.current);
     };
   }, []);
-
-  const openHubcapTokenModal = () => {
-    setTokenDraft(licenseToken);
-    setTokenError('');
-    setTokenModalOpen(true);
-  };
-
-  const openManifestHubModal = () => {
-    setManifestHubDraft(manifestHubApiKey);
-    setManifestHubError('');
-    setManifestHubModalOpen(true);
-  };
-
-  const closeTokenModal = () => {
-    setTokenModalOpen(false);
-    setTokenError('');
-  };
-
-  const closeManifestHubModal = () => {
-    setManifestHubModalOpen(false);
-    setManifestHubError('');
-  };
-
-  const confirmHubcapToken = async () => {
-    const nextToken = tokenDraft.trim();
-    if (!nextToken) {
-      setTokenError('Token cannot be empty.');
-      return;
-    }
-
-    setTokenChecking(true);
-    setTokenError('');
-    try {
-      const res = await fetch(`${API_URL}/api/token/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: nextToken }),
-      });
-
-      if (!res.ok) {
-        throw new Error(await extractErrorMessage(res));
-      }
-
-      setLicenseToken(nextToken);
-      setSource('hubcap');
-      setTokenModalOpen(false);
-      setTokenError('');
-      setDlStatus('Token is valid. Hubcap has been selected as the download source.');
-    } catch (err: any) {
-      setTokenError(String(err?.message ?? 'Token validation failed.'));
-    } finally {
-      setTokenChecking(false);
-    }
-  };
-
-  const confirmManifestHubApiKey = async () => {
-    const nextKey = manifestHubDraft.trim();
-    if (!nextKey) {
-      setManifestHubError('API key cannot be empty.');
-      return;
-    }
-
-    setManifestHubChecking(true);
-    setManifestHubError('');
-    try {
-      setManifestHubApiKey(nextKey);
-      setSource('manifesthub1');
-      setManifestHubModalOpen(false);
-      setManifestHubError('');
-      setDlStatus('API key saved. ManifestHub1 has been selected as the download source.');
-    } catch (err: any) {
-      setManifestHubError(String(err?.message ?? 'API key validation failed.'));
-    } finally {
-      setManifestHubChecking(false);
-    }
-  };
 
   const doSearch = useCallback(async (q: string, mode: SearchMode) => {
     setLoading(true);
@@ -358,58 +260,23 @@ export default function ManifestPage() {
   const handleDownload = async () => {
     if (!detail) return;
 
-    if (source === 'hubcap' && !licenseToken) {
-      openHubcapTokenModal();
-      return;
-    }
-
-    if (source === 'manifesthub1' && !manifestHubApiKey.trim()) {
-      openManifestHubModal();
-      return;
-    }
-
     setDlLoading(true);
     setDlStatus(SOURCE_INFO[source].requestText);
 
     try {
-      const payload: Record<string, unknown> = {
-        app_id: Number(detail.appId),
-        source,
-        game_name: detail.name,
-      };
-      if (source === 'hubcap') {
-        payload.token = licenseToken;
-      }
-      if (source === 'manifesthub1') {
-        payload.api_key = manifestHubApiKey.trim();
-      }
-
-      const res = await fetch(`${API_URL}/api/manifest`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `${API_URL}/api/manifest/${encodeURIComponent(detail.appId)}?provider=${encodeURIComponent(source)}`
+      );
 
       if (!res.ok) {
         const text = await extractErrorMessage(res);
         const lower = text.toLowerCase();
 
-        const isTokenIssue =
-          source === 'hubcap' &&
-          (lower.includes('token not found') ||
-            lower.includes('token has been used') ||
-            lower.includes('token has expired') ||
-            lower.includes('token is required'));
-
-        if (isTokenIssue) {
-          setLicenseToken('');
-          setTokenDraft('');
-          setTokenError(text);
-          setTokenModalOpen(true);
-          throw new Error(text);
-        }
-
-        if (lower.includes('manifest is not available') || lower.includes('failed to fetch manifest')) {
+        if (
+          lower.includes('manifest not found') ||
+          lower.includes('failed to download manifest') ||
+          lower.includes('failed to reach')
+        ) {
           setDlStatus(`✗ ${unavailableManifestMessage(source)}`);
           return;
         }
@@ -417,18 +284,20 @@ export default function ManifestPage() {
         throw new Error(`HTTP ${res.status} — ${text.slice(0, 120)}`);
       }
 
-      const result = await res.json();
-      if (!result.success || !result.download_url) {
-        throw new Error('Invalid download response from server.');
-      }
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? `${detail.appId}.zip`;
 
-      const downloadUrl = `${API_URL}${result.download_url}`;
-      window.location.href = downloadUrl;
-      setDlStatus(`✓ Download started: ${result.filename}`);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-      if (source === 'hubcap') {
-        setLicenseToken('');
-      }
+      setDlStatus(`✓ Download started: ${filename}`);
     } catch (err: any) {
       const message = String(err?.message ?? 'Unknown error');
       setDlStatus(`✗ ${message}`);
@@ -438,34 +307,16 @@ export default function ManifestPage() {
   };
 
   const SOURCE_INFO = {
-  sushi: {
-    name: 'EkOp',
-    description:
-      'EkOp is a free manifest source, but DLC availability is limited.',
-    requestText: 'Requesting manifest from EkOp…',
-  },
   hubcap: {
     name: 'Jeffrey',
     description:
-      'Jeffrey is a source manifest with 99.9% Game & DLC availability, but it requires an access token.',
+      'Jeffrey is a source manifest with 99.9% Game & DLC availability.',
     requestText: 'Requesting manifest from Jeffrey…',
   },
-  manifesthub1: {
-    name: 'DaRwiN',
-    description:
-      'DaRwiN is a free source manifest that provides only the manifest file, without Lua scripts; it is suitable for updating your game. DaRwiN requires your own API key.',
-    requestText: 'Requesting manifest from DaRwiN…',
-  },
-  ryuu: {
-    name: 'TanJungHoo',
-    description:
-      'TanJungHoo is a free manifest source that provides the latest game updates and DLC, but not as complete as Jeffrey.',
-    requestText: 'Requesting manifest from TanJungHoo…',
-  },
-  yaszz: {
+  ManifestHub2: {
     name: 'WoWo',
     description:
-      'WoWo is a free manifest source',
+      'WoWo is a free manifest source.',
     requestText: 'Requesting manifest from WoWo…',
   },
 } as const;
@@ -508,32 +359,16 @@ export default function ManifestPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
             {([
               {
-                value: 'ryuu' as const,
-                title: 'TanJungHoo',
-                subtitle: 'Free',
-              },
-              {
-                value: 'sushi' as const,
-                title: 'EkOp',
-                subtitle: 'Free',
-              },
-              {
-                value: 'yaszz' as const,
-                title: 'WoWo',
-                subtitle: 'Free source',
-              },
-              {
-                value: 'manifesthub1' as const,
+                value: 'ManifestHub2' as const,
                 title: 'DaRwiN',
-                subtitle: 'API key required (Manifest Only)',
+                subtitle: 'Free (Manifest Only)',
               },
               {
                 value: 'hubcap' as const,
                 title: 'Jeffrey',
-                subtitle: 'Need token (Best)',
+                subtitle: 'The Goat',
               },
-      
-            ].filter(option => !HIDDEN_SOURCE_OPTIONS.has(option.value))).map(option => {
+            ]).map(option => {
               const active = source === option.value;
               const baseCardStyle = {
                 textAlign: 'left' as const,
@@ -549,59 +384,14 @@ export default function ManifestPage() {
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                     <span style={{ fontSize: 14, fontWeight: 700 }}>{option.title}</span>
-                    {option.value === 'manifesthub1' ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label="Edit Api Key"
-                          onClick={e => {
-                            e.stopPropagation();
-                            openManifestHubModal();
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              openManifestHubModal();
-                            }
-                          }}
-                          style={{
-                            border: '1px solid rgba(168,85,247,0.35)',
-                            background: 'rgba(168,85,247,0.12)',
-                            color: '#E9D5FF',
-                            borderRadius: 999,
-                            padding: '4px 8px',
-                            fontSize: 10,
-                            fontWeight: 700,
-                            lineHeight: 1,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                            userSelect: 'none',
-                          }}
-                        >
-                          Edit API Key
-                        </span>
-                        <span style={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: '50%',
-                          border: active ? '4px solid #A855F7' : '1.5px solid rgba(156,163,175,0.6)',
-                          background: active ? '#fff' : 'transparent',
-                          flexShrink: 0,
-                        }} />
-                      </span>
-                    ) : (
-                      <span style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        border: active ? '4px solid #A855F7' : '1.5px solid rgba(156,163,175,0.6)',
-                        background: active ? '#fff' : 'transparent',
-                        flexShrink: 0,
-                      }} />
-                    )}
+                    <span style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: '50%',
+                      border: active ? '4px solid #A855F7' : '1.5px solid rgba(156,163,175,0.6)',
+                      background: active ? '#fff' : 'transparent',
+                      flexShrink: 0,
+                    }} />
                   </div>
                   <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 6, lineHeight: 1.4 }}>
                     {option.subtitle}
@@ -609,55 +399,11 @@ export default function ManifestPage() {
                 </>
               );
 
-              if (option.value === 'manifesthub1') {
-                return (
-                  <div
-                    key={option.value}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      if (manifestHubApiKey.trim()) {
-                        setSource('manifesthub1');
-                      } else {
-                        openManifestHubModal();
-                      }
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        if (manifestHubApiKey.trim()) {
-                          setSource('manifesthub1');
-                        } else {
-                          openManifestHubModal();
-                        }
-                      }
-                    }}
-                    style={{
-                      ...baseCardStyle,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {sourceBody}
-                  </div>
-                );
-              }
-
               return (
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => {
-                    if (option.value === 'hubcap') {
-                      if (licenseToken) {
-                        setSource('hubcap');
-                      } else {
-                        openHubcapTokenModal();
-                      }
-                      return;
-                    }
-
-                    setSource(option.value);
-                  }}
+                  onClick={() => setSource(option.value)}
                   style={baseCardStyle}
                 >
                   {sourceBody}
@@ -960,330 +706,6 @@ export default function ManifestPage() {
           </div>
         )}
       </div>
-
-      {tokenModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="hubcap-token-title"
-          onMouseDown={closeTokenModal}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(2,6,23,0.72)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-            zIndex: 2000,
-          }}
-        >
-          <div
-            onMouseDown={e => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 480,
-              background: 'linear-gradient(180deg, rgba(15,23,42,0.98), rgba(17,24,39,0.98))',
-              border: '1px solid rgba(168,85,247,0.25)',
-              borderRadius: 18,
-              boxShadow: '0 24px 80px rgba(0,0,0,0.55)',
-              padding: 24,
-              color: '#FAFAFA',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 18 }}>
-              <div>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '5px 10px',
-                  borderRadius: 999,
-                  background: 'rgba(168,85,247,0.12)',
-                  border: '1px solid rgba(168,85,247,0.25)',
-                  color: '#C084FC',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  marginBottom: 12,
-                }}>
-                  Jeffrey Access
-                </div>
-                <h3 id="hubcap-token-title" style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
-                  Insert Token
-                </h3>
-                <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: '#9CA3AF' }}>
-                  Jeffrey is a source manifest with 99.9% Game & DLC availability, but it requires an access token. Insert a token to use Jeffrey. Tokens can be obtained by making a request on Discord.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeTokenModal}
-                disabled={tokenChecking}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#9CA3AF',
-                  cursor: 'pointer',
-                  fontSize: 20,
-                  lineHeight: 1,
-                  padding: 4,
-                }}
-                aria-label="Close token dialog"
-              >
-                ×
-              </button>
-            </div>
-
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#CBD5E1', marginBottom: 8 }}>
-              License Token
-            </label>
-            <input
-              autoFocus
-              value={tokenDraft}
-              onChange={e => {
-                setTokenDraft(e.target.value.toUpperCase());
-                setTokenError('');
-              }}
-              placeholder="DX-XXXXX"
-              spellCheck={false}
-              autoComplete="off"
-              style={{
-                width: '100%',
-                borderRadius: 12,
-                border: `1px solid ${tokenError ? 'rgba(239,68,68,0.6)' : 'rgba(42,45,62,0.9)'}`,
-                background: 'rgba(15,15,19,0.7)',
-                color: '#FAFAFA',
-                padding: '14px 16px',
-                fontSize: 15,
-                outline: 'none',
-                letterSpacing: '0.04em',
-                fontFamily: 'monospace',
-              }}
-            />
-            
-
-            {tokenError && (
-              <div style={{
-                marginTop: 12,
-                padding: '10px 12px',
-                borderRadius: 10,
-                background: 'rgba(239,68,68,0.12)',
-                border: '1px solid rgba(239,68,68,0.25)',
-                color: '#FCA5A5',
-                fontSize: 12,
-                lineHeight: 1.5,
-              }}>
-                {tokenError}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button
-                type="button"
-                onClick={closeTokenModal}
-                disabled={tokenChecking}
-                style={{
-                  flex: '0 0 auto',
-                  border: '1px solid rgba(42,45,62,0.9)',
-                  background: 'rgba(15,15,19,0.7)',
-                  color: '#E5E7EB',
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmHubcapToken}
-                disabled={tokenChecking}
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  background: tokenChecking ? 'rgba(168,85,247,0.6)' : '#A855F7',
-                  color: '#fff',
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: tokenChecking ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 8px 24px rgba(168,85,247,0.28)',
-                }}
-              >
-                {tokenChecking ? 'Checking...' : 'Enter'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {manifestHubModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="manifesthub-token-title"
-          onMouseDown={closeManifestHubModal}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(2,6,23,0.72)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-            zIndex: 2000,
-          }}
-        >
-          <div
-            onMouseDown={e => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 480,
-              background: 'linear-gradient(180deg, rgba(15,23,42,0.98), rgba(17,24,39,0.98))',
-              border: '1px solid rgba(168,85,247,0.25)',
-              borderRadius: 18,
-              boxShadow: '0 24px 80px rgba(0,0,0,0.55)',
-              padding: 24,
-              color: '#FAFAFA',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 18 }}>
-              <div>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '5px 10px',
-                  borderRadius: 999,
-                  background: 'rgba(168,85,247,0.12)',
-                  border: '1px solid rgba(168,85,247,0.25)',
-                  color: '#C084FC',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  marginBottom: 12,
-                }}>
-                  DaRwiN Access
-                </div>
-                <h3 id="manifesthub-token-title" style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
-                  Insert API Key
-                </h3>
-                <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: '#9CA3AF' }}>
-                  DaRwiN is a free source manifest that provides only the manifest file, without Lua scripts; it is suitable for updating your game. DaRwiN requires your own API key. API Key can be obtained{" "} <a href="https://manifesthub2.filegear-sg.me" target="_blank" rel="noopener noreferrer" style={{color: "#A855F7",fontWeight: 600,textDecoration: "none",}}>here</a>.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeManifestHubModal}
-                disabled={manifestHubChecking}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#9CA3AF',
-                  cursor: 'pointer',
-                  fontSize: 20,
-                  lineHeight: 1,
-                  padding: 4,
-                }}
-                aria-label="Close ManifestHub dialog"
-              >
-                ×
-              </button>
-            </div>
-
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#CBD5E1', marginBottom: 8 }}>
-              API Key
-            </label>
-            <input
-              autoFocus
-              type="password"
-              value={manifestHubDraft}
-              onChange={e => {
-                setManifestHubDraft(e.target.value);
-                setManifestHubError('');
-              }}
-              placeholder="Paste your DaRwiN API key"
-              spellCheck={false}
-              autoComplete="off"
-              style={{
-                width: '100%',
-                borderRadius: 12,
-                border: `1px solid ${manifestHubError ? 'rgba(239,68,68,0.6)' : 'rgba(42,45,62,0.9)'}`,
-                background: 'rgba(15,15,19,0.7)',
-                color: '#FAFAFA',
-                padding: '14px 16px',
-                fontSize: 15,
-                outline: 'none',
-                letterSpacing: '0.04em',
-                fontFamily: 'monospace',
-              }}
-            />
-
-            {manifestHubError && (
-              <div style={{
-                marginTop: 12,
-                padding: '10px 12px',
-                borderRadius: 10,
-                background: 'rgba(239,68,68,0.12)',
-                border: '1px solid rgba(239,68,68,0.25)',
-                color: '#FCA5A5',
-                fontSize: 12,
-                lineHeight: 1.5,
-              }}>
-                {manifestHubError}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button
-                type="button"
-                onClick={closeManifestHubModal}
-                disabled={manifestHubChecking}
-                style={{
-                  flex: '0 0 auto',
-                  border: '1px solid rgba(42,45,62,0.9)',
-                  background: 'rgba(15,15,19,0.7)',
-                  color: '#E5E7EB',
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmManifestHubApiKey}
-                disabled={manifestHubChecking}
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  background: manifestHubChecking ? 'rgba(168,85,247,0.6)' : '#A855F7',
-                  color: '#fff',
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: manifestHubChecking ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 8px 24px rgba(168,85,247,0.28)',
-                }}
-              >
-                {manifestHubChecking ? 'Checking...' : 'Enter'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
