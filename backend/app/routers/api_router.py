@@ -83,7 +83,7 @@ async def get_steam_details(app_id: str):
 @router.get("/manifest/{app_id}")
 async def download_manifest_endpoint(
     app_id: int,
-    provider: Literal["hubcap", "ManifestHub2"] = Query("hubcap"),
+    provider: Literal["hubcap", "ManifestHub2"] = Query("ManifestHub2"),
     db: Session = Depends(get_db),
 ):
     try:
